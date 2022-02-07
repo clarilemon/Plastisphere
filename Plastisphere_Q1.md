@@ -78,10 +78,6 @@ p1 <- ggplot(data=df_m, aes(x=Filter_size, y=value)) +
   guides(fill=FALSE)
 ```
 
-``` r
-p1
-```
-
 <img src="Plastisphere_Q1_files/figure-gfm/fig1-1.png" style="display: block; margin: auto;" />
 
 Alpha diversity (ASV richness and eveness) increases with the filter
@@ -111,99 +107,9 @@ p2 <- ggplot(data=df_m, aes(x=Date, y=value, colour=Filter_size)) +
   guides(fill=FALSE)
 ```
 
-``` r
-p2
-```
-
 <img src="Plastisphere_Q1_files/figure-gfm/fig2-1.png" style="display: block; margin: auto;" />
 
 ## 2\. Taxa enriched in plastics vs seawater
-
-``` r
-# Using DESeq2 package
-
-library(DESeq2)
-library(phyloseq)
-library(ggplot2)
-library(reshape2)
-library(RColorBrewer)
-
-
-# Create a family count table
-
-OTU_t <- as.data.frame(t(OTU_subset))
-OTU_t$Family = taxtable[match(rownames(OTU_t), rownames(taxtable)),"taxa"]
-
-df <- cbind(OTUs = rownames(OTU_t), OTU_t)
-df_m <- melt(df, id.vars=c("OTUs", "Family"))
-mcast <- dcast(df_m, Family ~ variable, sum)
-mcast <- na.omit(mcast)
-rownames(mcast) <- mcast$Family
-mcast <- mcast[,-1]
-otu.perc <- as.data.frame(t(mcast))
-otu <- t(otu.perc)
-
-write.table(otu, "OTU_table_family.txt", sep="\t")
-
-
-# Create a phyloseq object
-OTU <- otu_table(otu, taxa_are_rows = T)
-META <- sample_data(metadata)
-Phymatrice <- phyloseq(OTU, META)
-
-Samples <- subset_samples(Phymatrice, Dataset=="microrevenge")
-Samples <- subset_samples(Samples, Type_sample=="sample")
-
-
-#Convert into deseq object
-deseq = phyloseq_to_deseq2(Samples, ~ Matrice)
-
-# Remove the least abundant OTUs (less than 100 sequences over all the samples)
-keep <- rowSums(counts(deseq)) >= 100
-deseq <- deseq[keep,]
-
-# perform DESeq
-deseq$Matrice <- factor(deseq$Matrice, levels = c("Seawater","Polymere"))
-deseq <- DESeq(deseq)
-
-res <- results(deseq, alpha=0.1)
-summary(res)
-```
-
-    ## 
-    ## out of 400 with nonzero total read count
-    ## adjusted p-value < 0.1
-    ## LFC > 0 (up)       : 94, 24%
-    ## LFC < 0 (down)     : 137, 34%
-    ## outliers [1]       : 0, 0%
-    ## low counts [2]     : 0, 0%
-    ## (mean count < 0)
-    ## [1] see 'cooksCutoff' argument of ?results
-    ## [2] see 'independentFiltering' argument of ?results
-
-``` r
-# Filter the family based on padj and Log2FoldChange 
-resSub <- subset(res, padj < 0.01)
-resSub <- subset(resSub, log2FoldChange > 3 | log2FoldChange < -3)
-resSub <- subset(resSub, baseMean > 50)
-
-Sub <- as.data.frame(resSub)
-Sub <- cbind(taxa = rownames(Sub), Sub)
-Sub <- Sub[order(Sub$log2FoldChange, decreasing=F),]
-levels <- Sub$taxa
-Sub$taxa <- factor(Sub$taxa, levels=levels)
-
-
-gg <- ggplot(Sub, aes(x=taxa, y = log2FoldChange)) + 
-  geom_point(size=3)+
-  theme(strip.text.y = element_text(size = 10, angle = 0), axis.text.x = element_text(size = 8 , angle = 90), axis.text.y = element_text(size = 8), legend.position="bottom") +
-  coord_flip()+
-  ggtitle("DESeq2 Biomarkers of polymere vs seawater at family level")
-
-gg
-```
-
-![](Plastisphere_Q1_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ### Taxa enriched in plastics vs 0.2µm
 
@@ -516,10 +422,6 @@ gg <- ggplot(Sub_m, aes(x=factor(Family, levels=unique(levels)), y = value, fill
   scale_y_continuous(limits = c(-15,25), breaks=c(-15,-10,-5,0,5,10,15,20,25)) 
 ```
 
-``` r
-gg
-```
-
 <img src="Plastisphere_Q1_files/figure-gfm/fig3-1.png" style="display: block; margin: auto;" />
 
 ### Distribution of the main bacterial families colonizing plastic pellets
@@ -616,10 +518,6 @@ gg <- ggplot(df_m, aes(samples, variable, fill= as.factor(Relative_abundances)))
   scale_fill_manual(values=c("#001329","#133f70","#4d7397","#9ab9cb","#eaeef2")) +
   theme(strip.text.y = element_text(size = 10, angle = 0), axis.text.x = element_text(size = 8 , angle = 90), axis.text.y = element_text(size = 8)) +
   facet_grid(.~Zone, scales="free", space="free_x")
-```
-
-``` r
-gg
 ```
 
 <img src="Plastisphere_Q1_files/figure-gfm/fig4-1.png" style="display: block; margin: auto;" />
